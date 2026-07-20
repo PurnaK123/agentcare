@@ -1,0 +1,8 @@
+SYNTHETIC DOCUMENT - NOT A REAL MEDICAL RECORD
+
+Document type: General administrative attachment
+Synthetic patient reference: SYN-PAT-0001
+
+This document is deliberately not an ECG, blood report, referral, or imaging
+report. It is used to verify that uncertain documents are classified as other
+or unknown and may require staff review.

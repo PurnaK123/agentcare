@@ -124,6 +124,7 @@ exact document duplicates, approval gating/resume, CSRF-backed login, and backen
 - India privacy posture: [`docs/compliance-india.md`](docs/compliance-india.md)
 - Threat model: [`docs/threat-model.md`](docs/threat-model.md)
 - Evaluation scenarios: [`docs/evaluation.md`](docs/evaluation.md)
+- Non-developer manual scripts and synthetic test data: [`docs/manual-test-pack.md`](docs/manual-test-pack.md)
 
 The required challenge workflow is at `.github/workflows/agentcare-checks.yml`. Add
 `SUBMISSION_TOKEN` as a GitHub Actions repository secret; never put it in `.env` or source code.
