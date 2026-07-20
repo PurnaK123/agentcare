@@ -55,6 +55,12 @@ def create_user(
     normalized_email = normalize_email(email)
     existing = db.scalar(select(User).where(User.email == normalized_email))
     if existing:
+        # Demo credentials are configured through .env and must stay usable after a restart.
+        existing.name = name
+        existing.password_hash = hash_password(password)
+        existing.role = role
+        existing.active = True
+        db.flush()
         return existing, False
     user = User(
         name=name,
