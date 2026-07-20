@@ -68,6 +68,8 @@ class Settings(BaseSettings):
 
     def validate_for_startup(self) -> None:
         if self.app_env == "production":
+            if self.session_secret == self.openai_api_key or self.session_secret.startswith("sk-"):
+                raise RuntimeError("SESSION_SECRET must be distinct from all provider API keys")
             if len(self.session_secret) < 32 or "change" in self.session_secret.lower():
                 raise RuntimeError("A strong SESSION_SECRET is required in production")
             if not self.cookie_secure:
