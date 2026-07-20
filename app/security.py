@@ -3,6 +3,9 @@ import hmac
 import json
 import re
 import secrets
+from datetime import date, datetime
+from enum import Enum
+from pathlib import Path
 from typing import Any
 
 from fastapi import HTTPException, Request, status
@@ -62,6 +65,12 @@ def redact_metadata(value: Any) -> Any:
         }
     if isinstance(value, list):
         return [redact_metadata(item) for item in value]
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+    if isinstance(value, Enum):
+        return value.value
+    if isinstance(value, Path):
+        return str(value)
     if isinstance(value, str) and len(value) > 1000:
         return f"{value[:997]}..."
     return value

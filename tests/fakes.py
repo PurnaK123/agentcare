@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from pydantic import BaseModel
 
@@ -49,8 +49,8 @@ class FakeLLM:
                 intent=intent,
                 department_name="Cardiology",
                 confidence=self.routing_confidence,
-                preferred_start_date=None,
-                preferred_end_date=None,
+                preferred_start_date=date.today() + timedelta(days=1),
+                preferred_end_date=date.today() + timedelta(days=10),
                 reason="The patient explicitly requested Cardiology administration.",
             )
         if output_model is AppointmentPlan:
@@ -104,6 +104,9 @@ class FakeLLM:
             )
         if output_model is ConfirmationResult:
             facts = payload["persisted_facts"]
+            if facts.get("appointment"):
+                assert "scheduled_start_local" in facts["appointment"]
+                assert facts["appointment"]["timezone"] == "Asia/Kolkata"
             return ConfirmationResult(
                 message=(
                     f"Request {facts['request_reference']} was processed from persisted records."

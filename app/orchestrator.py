@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -552,10 +552,15 @@ class WorkflowCoordinator:
                 .options(joinedload(Appointment.doctor))
                 .where(Appointment.id == appointment.id)
             )
+            scheduled_start = appointment.scheduled_start
+            if scheduled_start.tzinfo is None:
+                scheduled_start = scheduled_start.replace(tzinfo=UTC)
+            local_start = scheduled_start.astimezone(ZoneInfo(self.settings.timezone))
             facts["appointment"] = {
                 "status": appointment.status.value,
                 "doctor": doctor.doctor.name if doctor else "",
-                "scheduled_start": appointment.scheduled_start.isoformat(),
+                "scheduled_start_local": local_start.isoformat(),
+                "timezone": self.settings.timezone,
             }
         return facts
 

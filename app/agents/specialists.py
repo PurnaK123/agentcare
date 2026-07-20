@@ -219,7 +219,8 @@ confirmation using only persisted_facts supplied by the backend. Do not add fact
 diagnose, interpret documents, or promise unavailable services. Clearly state whether
 an appointment was booked, rescheduled, cancelled, needs input, or awaits human
 review. Mention missing document types when supplied. Never expose internal IDs except
-the synthetic request reference.
+the synthetic request reference. Use scheduled_start_local and explicitly identify its
+supplied timezone; never convert or infer a different time.
 """.strip()
 
     def __init__(self, llm: LLMClient) -> None:
