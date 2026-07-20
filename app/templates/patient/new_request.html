@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-heading">
+  <div><p class="eyebrow">Coordinator intake</p><h1>Describe the administrative goal</h1><p>The safety agent checks scope before any operational tool can run.</p></div>
+  <a class="text-link" href="/patient">Back to care desk</a>
+</section>
+<div class="request-layout">
+  <section class="panel form-panel">
+    <form action="/patient/requests" method="post" enctype="multipart/form-data" class="stack-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label>Administrative request
+        <textarea name="request_text" rows="7" minlength="5" maxlength="2000" required placeholder="I need a Cardiology appointment next week and want to attach my old ECG."></textarea>
+      </label>
+      <label>Synthetic supporting documents
+        <input type="file" name="documents" multiple accept=".pdf,.png,.jpg,.jpeg,.txt">
+        <small>PDF, PNG, JPEG, or text. Maximum 8 MB each. Exact duplicates are detected by checksum.</small>
+      </label>
+      <label class="check-label">
+        <input type="checkbox" name="synthetic_acknowledgement" value="yes" required>
+        I will use only synthetic documents and information.
+      </label>
+      <button class="button button-accent" type="submit">Run coordinated workflow</button>
+    </form>
+  </section>
+  <aside class="panel guidance-panel">
+    <p class="eyebrow">Safe examples</p>
+    <h2>Try a complete flow</h2>
+    <blockquote>“I need a Cardiology appointment next week and want to attach my previous ECG.”</blockquote>
+    <h3>Administrative scope</h3>
+    <ul class="plain-list">
+      <li>Book, reschedule, or cancel</li>
+      <li>Coordinate documents</li>
+      <li>Create reminders and follow-up</li>
+    </ul>
+    <div class="safety-note"><strong>Not supported</strong><span>Diagnosis, prescriptions, dosages, or interpretation of clinical results.</span></div>
+  </aside>
+</div>
+{% endblock %}

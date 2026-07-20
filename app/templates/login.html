@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="login-layout">
+  <div class="login-story">
+    <p class="eyebrow">A safer administrative handoff</p>
+    <h1>From patient request to a traceable care workflow.</h1>
+    <p>Distinct AI agents coordinate routing, appointments, documents, reminders, and human review. Every action is validated and persisted.</p>
+    <ol class="signal-list">
+      <li><span>01</span> Intent and safety screening</li>
+      <li><span>02</span> Real slot and document tools</li>
+      <li><span>03</span> Human oversight and audit evidence</li>
+    </ol>
+  </div>
+  <div class="login-card">
+    <p class="eyebrow">Synthetic demo access</p>
+    <h2>Sign in</h2>
+    {% if error %}<div class="flash flash-error" role="alert">{{ error }}</div>{% endif %}
+    <form action="/login" method="post" class="stack-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label>Email
+        <input type="email" name="email" autocomplete="username" required autofocus>
+      </label>
+      <label>Password
+        <input type="password" name="password" autocomplete="current-password" required>
+      </label>
+      <button class="button button-primary" type="submit">Enter AgentCare</button>
+    </form>
+    <div class="credential-hint">
+      <strong>Demo identities</strong>
+      <span>Patient: {{ config.patient_email }}</span>
+      <span>Staff: {{ config.staff_email }}</span>
+      <small>Use the passwords configured by the deployment owner.</small>
+    </div>
+  </div>
+</section>
+{% endblock %}

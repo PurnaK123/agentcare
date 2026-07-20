@@ -1,0 +1,4 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="error-page"><span>{{ status_code }}</span><p class="eyebrow">Request stopped safely</p><h1>{{ detail }}</h1><p>No unauthorized action was performed.</p><a class="button button-primary" href="/">Return home</a></section>
+{% endblock %}

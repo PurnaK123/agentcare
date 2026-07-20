@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero compact-hero staff-hero"><div><p class="eyebrow">Hospital operations</p><h1>Human oversight desk</h1><p>Review agent uncertainty, approve exact action payloads, and inspect persisted evidence.</p></div><a class="button button-accent" href="/staff/catalog">Manage care catalog</a></section>
+<section class="metric-grid">
+  <article><span>{{ counts.requests }}</span><strong>Patient requests</strong></article><article><span>{{ counts.appointments }}</span><strong>Appointments</strong></article><article class="metric-alert"><span>{{ counts.open_escalations }}</span><strong>Open escalations</strong></article><article><span>{{ counts.pending_approvals }}</span><strong>Pending approvals</strong></article>
+</section>
+<div class="dashboard-grid">
+  <section class="panel panel-wide"><p class="eyebrow">Queue</p><h2>Recent requests</h2><div class="record-list">
+    {% for item in requests %}<a class="record-row" href="/staff/requests/{{ item.id }}"><span class="record-index">REQ-{{ "%05d"|format(item.id) }}</span><span class="record-main"><strong>{{ item.patient.user.name }}</strong><small>{{ item.request_text }}</small></span><span class="status status-{{ item.status.value }}">{{ item.status.value|replace('_', ' ') }}</span></a>{% else %}<p class="empty-state">No requests submitted.</p>{% endfor %}
+  </div></section>
+  <section class="panel"><p class="eyebrow">Decision gate</p><h2>Pending approvals</h2>
+    {% for item in approvals %}<article class="queue-card"><span class="status status-pending">pending</span><h3>REQ-{{ "%05d"|format(item.workflow_run.request_id) }}</h3><p>{{ item.action_type|replace('_', ' ')|title }}</p><a href="/staff/requests/{{ item.workflow_run.request_id }}">Review exact payload</a></article>{% else %}<p class="empty-state">No actions await approval.</p>{% endfor %}
+  </section>
+  <section class="panel"><p class="eyebrow">Safety queue</p><h2>Open escalations</h2>
+    {% for item in escalations %}<article class="queue-card"><span class="severity severity-{{ item.severity }}">{{ item.severity }}</span><h3>{{ item.reason_code|replace('_', ' ')|title }}</h3><p>{{ item.reason }}</p><a href="/staff/requests/{{ item.workflow_run.request_id }}">Open case</a></article>{% else %}<p class="empty-state">No open safety cases.</p>{% endfor %}
+  </section>
+</div>
+{% endblock %}

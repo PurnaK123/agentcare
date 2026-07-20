@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-heading">
+  <div><p class="eyebrow">Persisted workflow evidence</p><h1>REQ-{{ "%05d"|format(patient_request.id) }}</h1><p>{{ patient_request.request_text }}</p></div>
+  <span class="status status-{{ patient_request.status.value }} large-status">{{ patient_request.status.value|replace('_', ' ') }}</span>
+</section>
+
+{% if patient_request.confirmation_message %}
+<section class="confirmation-card"><span aria-hidden="true">✓</span><div><strong>Coordinator response</strong><p>{{ patient_request.confirmation_message }}</p></div></section>
+{% endif %}
+
+<div class="detail-grid">
+  <section class="panel panel-wide">
+    <div class="section-heading"><div><p class="eyebrow">Agent-to-agent state transfer</p><h2>Workflow timeline</h2></div>{% if workflow %}<code>{{ workflow.correlation_id }}</code>{% endif %}</div>
+    {% if workflow and workflow.steps %}
+    <div class="timeline">
+      {% for step in workflow.steps %}
+      <details class="timeline-step" {% if loop.last %}open{% endif %}>
+        <summary>
+          <span class="step-number">{{ "%02d"|format(step.sequence) }}</span>
+          <span><strong>{{ step.agent_name|replace('_', ' ')|title }} Agent</strong><small>{{ step.prompt_version }} · {{ step.model_name }}</small></span>
+          <span class="status status-{{ step.status.value }}">{{ step.status.value }}</span>
+        </summary>
+        <div class="step-body">
+          <div><h3>Validated output</h3><pre>{{ step.output|tojson(indent=2) }}</pre></div>
+          <div><h3>Tool invocations</h3>
+            {% if step.tool_calls %}
+              {% for call in step.tool_calls %}
+              <article class="tool-call"><strong>{{ call.tool }}</strong><span class="status status-{{ call.status }}">{{ call.status }}</span><pre>{{ call|tojson(indent=2) }}</pre></article>
+              {% endfor %}
+            {% else %}<p class="muted">No operational tool was required for this handoff.</p>{% endif %}
+          </div>
+        </div>
+      </details>
+      {% endfor %}
+    </div>
+    {% else %}<p class="empty-state">Workflow steps have not started.</p>{% endif %}
+    {% if workflow and workflow.status.value == 'retry_pending' %}
+    <form action="/{% if staff_view %}staff{% else %}patient{% endif %}/workflows/{{ workflow.id }}/retry" method="post" class="top-gap">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="button button-primary" type="submit">Retry from saved checkpoint</button>
+    </form>
+    {% endif %}
+  </section>
+
+  <aside class="panel facts-panel">
+    <p class="eyebrow">Persisted result</p><h2>Case facts</h2>
+    {% if appointment %}
+    <dl><dt>Department</dt><dd>{{ appointment.doctor.department.name }}</dd><dt>Doctor</dt><dd>{{ appointment.doctor.name }}</dd><dt>Time</dt><dd>{{ appointment.scheduled_start|local_datetime }}</dd><dt>Status</dt><dd>{{ appointment.status.value }}</dd></dl>
+    {% else %}<p class="muted">No appointment was created by this workflow.</p>{% endif %}
+    <h3>Documents</h3>
+    {% for document in patient_request.documents %}
+    <div class="document-row"><div><strong>{{ document.document_type|replace('_', ' ')|title }}</strong><small>{{ document.original_name }}</small></div><span class="status status-{{ document.status.value }}">{{ document.status.value|replace('_', ' ') }}</span></div>
+    {% else %}<p class="muted">No documents attached.</p>{% endfor %}
+    <h3>Reminders</h3>
+    {% for reminder in reminders %}<p class="fact-line"><strong>{{ reminder.reminder_type|replace('_', ' ')|title }}</strong><span>{{ reminder.scheduled_at|local_datetime }}</span></p>{% else %}<p class="muted">None created.</p>{% endfor %}
+  </aside>
+</div>
+
+{% if approvals or escalations %}
+<section class="panel oversight-panel">
+  <p class="eyebrow">Human oversight</p><h2>Approvals and escalations</h2>
+  <div class="oversight-grid">
+    {% for approval in approvals %}
+    <article><span class="status status-{{ approval.status.value }}">{{ approval.status.value }}</span><h3>{{ approval.action_type|replace('_', ' ')|title }}</h3><p>Payload fingerprint: <code>{{ approval.payload_hash[:16] }}…</code></p>
+      {% if staff_view and approval.status.value == 'pending' %}
+      <form action="/staff/approvals/{{ approval.id }}" method="post" class="stack-form compact-form"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><label>Review note<input name="notes" maxlength="1000" value="Synthetic route checked against request."></label><div class="button-row"><button class="button button-small button-primary" name="decision" value="approve">Approve exact payload</button><button class="button button-small button-danger" name="decision" value="reject">Reject</button></div></form>
+      {% endif %}
+    </article>
+    {% endfor %}
+    {% for escalation in escalations %}
+    <article><span class="status status-{{ escalation.status.value }}">{{ escalation.status.value }}</span><h3>{{ escalation.reason_code|replace('_', ' ')|title }}</h3><p>{{ escalation.reason }}</p>
+      {% if staff_view and escalation.status.value == 'open' %}
+      <form action="/staff/escalations/{{ escalation.id }}" method="post" class="stack-form compact-form"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><label>Review note<input name="notes" maxlength="1000" required></label><div class="button-row"><button class="button button-small button-primary" name="decision" value="resolve">Resolve</button><button class="button button-small" name="decision" value="dismiss">Dismiss</button></div></form>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if staff_view and patient_request.documents %}
+<section class="panel"><p class="eyebrow">Authorized document action</p><h2>Staff document review</h2>
+  {% for document in patient_request.documents if document.status.value == 'needs_review' %}
+  <form action="/staff/documents/{{ document.id }}/review" method="post" class="inline-review"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><strong>{{ document.original_name }}</strong><select name="document_type">{% for kind in ['ecg','blood_report','referral_letter','prescription','imaging_report','discharge_summary','other','unknown'] %}<option value="{{ kind }}" {% if kind == document.document_type %}selected{% endif %}>{{ kind|replace('_', ' ')|title }}</option>{% endfor %}</select><button class="button button-small button-primary" name="decision" value="approve">Approve</button><button class="button button-small button-danger" name="decision" value="reject">Reject</button></form>
+  {% else %}<p class="muted">No document currently needs staff classification review.</p>{% endfor %}
+</section>
+{% endif %}
+{% endblock %}

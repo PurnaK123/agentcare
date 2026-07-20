@@ -1,0 +1,1 @@
+AgentCare database migrations. Apply with: alembic upgrade head

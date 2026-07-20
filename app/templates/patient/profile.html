@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-heading">
+  <div><p class="eyebrow">Patient record tool</p><h1>Synthetic profile</h1><p>This record is persisted in SQL and scoped to your patient account.</p></div>
+  <span class="reference-chip">{{ patient.synthetic_reference }}</span>
+</section>
+<section class="panel form-panel">
+  <form action="/patient/profile" method="post" class="form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label>Display name
+      <input name="name" value="{{ user.name }}" maxlength="120" required>
+    </label>
+    <label>Synthetic date of birth
+      <input type="date" name="date_of_birth" value="{{ patient.date_of_birth or '' }}">
+    </label>
+    <label>Synthetic phone
+      <input name="phone" value="{{ patient.phone or '' }}" maxlength="30">
+    </label>
+    <label>Preferred language
+      <select name="preferred_language">
+        {% for language in ['English', 'Hindi', 'Telugu', 'Tamil', 'Marathi'] %}
+        <option {% if patient.preferred_language == language %}selected{% endif %}>{{ language }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="span-two">Synthetic emergency contact
+      <input name="emergency_contact" value="{{ patient.emergency_contact or '' }}" maxlength="160">
+    </label>
+    <label class="check-label span-two">
+      <input type="checkbox" name="demo_acknowledgement" value="yes" required checked>
+      I confirm that every value entered is fictional and contains no real patient information.
+    </label>
+    <div class="span-two"><button class="button button-primary" type="submit">Save synthetic profile</button></div>
+  </form>
+</section>
+{% endblock %}

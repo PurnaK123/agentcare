@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-heading"><div><p class="eyebrow">Appointment agent</p><h1>Choose a new persisted slot</h1><p>{{ appointment.doctor.department.name }} with {{ appointment.doctor.name }} · currently {{ appointment.scheduled_start|local_datetime }}</p></div></section>
+<section class="panel">
+  {% if slots %}
+  <form action="/patient/appointments/{{ appointment.id }}/reschedule" method="post" class="slot-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% for slot in slots %}
+    <label class="slot-option">
+      <input type="radio" name="slot_id" value="{{ slot.id }}" required>
+      <span><strong>{{ slot.start_time|local_datetime }}</strong><small>{{ slot.doctor.name }}</small></span>
+    </label>
+    {% endfor %}
+    <div class="span-all"><button class="button button-primary" type="submit">Ask agent to reschedule</button></div>
+  </form>
+  {% else %}<p class="empty-state">No alternative slots are currently available.</p>{% endif %}
+</section>
+{% endblock %}

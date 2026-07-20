@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero compact-hero">
+  <div>
+    <p class="eyebrow">Patient care desk · {{ patient.synthetic_reference }}</p>
+    <h1>Welcome, {{ user.name }}</h1>
+    <p>Submit one administrative request and follow every agent handoff through completion.</p>
+  </div>
+  <a class="button button-accent" href="/patient/requests/new">Start a request</a>
+</section>
+
+{% if notifications %}
+<section class="notice-strip" aria-label="Recent notifications">
+  <strong>Latest update</strong>
+  <span>{{ notifications[0].message }}</span>
+</section>
+{% endif %}
+
+<div class="dashboard-grid">
+  <section class="panel panel-wide">
+    <div class="section-heading"><div><p class="eyebrow">Workflow ledger</p><h2>Recent requests</h2></div></div>
+    {% if requests %}
+    <div class="record-list">
+      {% for item in requests %}
+      <a class="record-row" href="/patient/requests/{{ item.id }}">
+        <span class="record-index">REQ-{{ "%05d"|format(item.id) }}</span>
+        <span class="record-main"><strong>{{ item.request_text }}</strong><small>{{ item.created_at|local_datetime }}</small></span>
+        <span class="status status-{{ item.status.value }}">{{ item.status.value|replace('_', ' ') }}</span>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}<p class="empty-state">No requests yet. Begin with the synthetic Cardiology example.</p>{% endif %}
+  </section>
+
+  <section class="panel">
+    <p class="eyebrow">Persisted schedule</p><h2>Appointments</h2>
+    {% if appointments %}
+      {% for item in appointments %}
+      <article class="mini-card">
+        <div><strong>{{ item.doctor.department.name }}</strong><span>{{ item.doctor.name }}</span></div>
+        <time>{{ item.scheduled_start|local_datetime }}</time>
+        <span class="status status-{{ item.status.value }}">{{ item.status.value }}</span>
+        {% if item.status.value in ['confirmed', 'pending'] %}
+        <div class="button-row">
+          <a class="button button-small" href="/patient/appointments/{{ item.id }}/reschedule">Reschedule</a>
+          <form action="/patient/appointments/{{ item.id }}/cancel" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="button button-small button-danger" type="submit">Cancel</button>
+          </form>
+        </div>
+        {% endif %}
+      </article>
+      {% endfor %}
+    {% else %}<p class="empty-state">No appointments have been persisted.</p>{% endif %}
+  </section>
+
+  <section class="panel">
+    <p class="eyebrow">Document coordination</p><h2>Documents</h2>
+    {% if documents %}
+      {% for item in documents %}
+      <article class="document-row">
+        <div><strong>{{ item.document_type|replace('_', ' ')|title }}</strong><small>{{ item.original_name }}</small></div>
+        <span class="status status-{{ item.status.value }}">{{ item.status.value|replace('_', ' ') }}</span>
+        <a href="/documents/{{ item.id }}/download">Download</a>
+      </article>
+      {% endfor %}
+    {% else %}<p class="empty-state">Uploaded synthetic documents appear here.</p>{% endif %}
+  </section>
+
+  <section class="panel panel-wide">
+    <p class="eyebrow">Durable follow-up</p><h2>Reminders and tasks</h2>
+    {% if reminders %}
+    <div class="record-list compact-list">
+      {% for item in reminders %}
+      <div class="record-row static-row">
+        <span class="record-index">{{ item.reminder_type|replace('_', ' ')|title }}</span>
+        <span class="record-main"><strong>{{ item.message }}</strong><small>Scheduled {{ item.scheduled_at|local_datetime }}</small></span>
+        <span class="status status-{{ item.status.value }}">{{ item.status.value }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}<p class="empty-state">Follow-up tasks are created after a successful booking.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

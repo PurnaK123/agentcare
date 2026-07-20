@@ -1,0 +1,8 @@
+SYNTHETIC DOCUMENT - NOT A REAL MEDICAL RECORD
+
+Document type: Previous blood report
+Synthetic patient reference: SYN-PAT-0001
+Document date: 02 July 2026
+
+This file is a harmless placeholder for AgentCare's administrative document
+coordination workflow. It contains no real results or personal information.

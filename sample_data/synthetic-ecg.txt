@@ -1,0 +1,9 @@
+SYNTHETIC DOCUMENT - NOT A REAL MEDICAL RECORD
+
+Document type: Previous ECG report
+Synthetic patient reference: SYN-PAT-0001
+Document date: 01 July 2026
+
+This file exists only to demonstrate administrative document classification,
+checksum-based duplicate detection, patient mapping, and missing-document checks.
+It contains no clinical interpretation and no real person's information.

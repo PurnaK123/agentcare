@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-heading"><div><p class="eyebrow">Append-only application evidence</p><h1>Audit trail</h1><p>Actor, action, entity, correlation ID, and redacted metadata.</p></div></section>
+<section class="panel table-panel"><div class="responsive-table"><table><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Correlation</th><th>Metadata</th></tr></thead><tbody>
+  {% for event in events %}<tr><td>{{ event.created_at|local_datetime }}</td><td>{{ event.actor_role }}</td><td><strong>{{ event.action }}</strong></td><td>{{ event.entity_type }} #{{ event.entity_id }}</td><td><code>{{ event.correlation_id or '—' }}</code></td><td><code>{{ event.event_metadata|tojson }}</code></td></tr>{% else %}<tr><td colspan="6">No audit events.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}
