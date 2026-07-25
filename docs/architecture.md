@@ -6,7 +6,8 @@
 flowchart LR
     UI[Patient or Staff UI] --> R[FastAPI route]
     R --> A[Session, CSRF, role, ownership]
-    A --> C[Coordinator state machine]
+    A --> LG[Per-run LangGraph StateGraph]
+    LG --> C[Coordinator state machine]
     C --> S[Safety Agent]
     C --> D[Department Routing Agent]
     C --> P[Appointment Agent]
@@ -24,6 +25,17 @@ The OpenAI model interprets untrusted text and returns a Pydantic-validated deci
 issue SQL, access arbitrary files/URLs, choose a user role, or bypass an approval. The coordinator
 validates IDs against tool-returned allowlists before executing a mutation.
 
+## LangGraph Orchestration
+
+`WorkflowCoordinator.execute` creates and compiles a fresh LangGraph `StateGraph` for each run.
+The graph has named `intake`, `safety`, `routing`, `approval`, `appointment`, `documents`,
+`follow_up`, and `confirmation` nodes. Each node delegates to the corresponding coordinator stage,
+commits its durable checkpoint, and routes from the persisted `current_step` value.
+
+The graph stops when the workflow reaches a terminal state or waits for staff approval or patient
+input. Resuming a workflow constructs a new graph and starts at its saved checkpoint. No graph,
+agent, or LLM client is held in module-level mutable state.
+
 ## Bounded State Machine
 
 ```text
@@ -34,7 +46,8 @@ intake -> safety -> routing -> [approval] -> appointment
 Every completed stage commits its state and `AgentStep`. A failure rolls back that stage, records a
 failed step and redacted audit event, leaves `current_step` unchanged, and changes the workflow to
 `retry_pending`. Retrying starts at that checkpoint. `MAX_WORKFLOW_STEPS` prevents unbounded loops;
-OpenAI calls have bounded exponential retries.
+the LangGraph invocation also has a matching recursion limit. OpenAI calls have bounded exponential
+retries.
 
 ## Agent Distinctness
 

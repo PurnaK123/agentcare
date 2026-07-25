@@ -13,10 +13,12 @@ uncertainty to authorized staff.
 The primary path is fully wired:
 
 ```text
-FastAPI route -> Coordinator -> Specialist agent -> Authorized tool
+FastAPI route -> LangGraph workflow -> Coordinator/Specialist agent -> Authorized tool
               -> SQL transaction -> Workflow checkpoint -> User-visible result
 ```
 
+- Each execution builds and invokes a fresh LangGraph `StateGraph`; its named nodes resume from the
+  persisted workflow checkpoint and stop at terminal, input, or staff-approval states.
 - OpenAI produces schema-validated decisions; there is no production hardcoded-response fallback.
 - Tools query or mutate SQL records and record their arguments/results in the workflow timeline.
 - SQLite is persistent locally; PostgreSQL is used for deployment.
@@ -115,7 +117,8 @@ See [`docs/demo-script.md`](docs/demo-script.md) for approval and safety scenari
 
 Tests use an injected deterministic LLM double so CI needs no API key. Production always uses the
 OpenAI client. Test coverage includes booking, all distinct agent/tool evidence, emergency blocking,
-exact document duplicates, approval gating/resume, CSRF-backed login, and backend role denial.
+exact document duplicates, LangGraph node compilation and invocation, approval gating/resume,
+CSRF-backed login, and backend role denial.
 
 ## Deployment and Submission
 

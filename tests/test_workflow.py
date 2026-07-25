@@ -28,15 +28,38 @@ def patient_and_staff(db):
     return patient, patient_user, staff_user
 
 
-def test_booking_workflow_persists_agent_tools_and_results(db):
+def test_booking_workflow_persists_agent_tools_and_results(db, monkeypatch):
     patient, patient_user, _ = patient_and_staff(db)
     llm = FakeLLM()
-    run = WorkflowCoordinator(db, llm, patient_user).submit(
+    coordinator = WorkflowCoordinator(db, llm, patient_user)
+    graph = coordinator._build_workflow_graph()
+    assert {
+        "intake",
+        "safety",
+        "routing",
+        "approval",
+        "appointment",
+        "documents",
+        "follow_up",
+        "confirmation",
+    } <= set(graph.nodes)
+
+    graph_builds = 0
+    original_build = coordinator._build_workflow_graph
+
+    def build_graph():
+        nonlocal graph_builds
+        graph_builds += 1
+        return original_build()
+
+    monkeypatch.setattr(coordinator, "_build_workflow_graph", build_graph)
+    run = coordinator.submit(
         patient=patient,
         request_text="I need a Cardiology appointment next week.",
         uploads=[("previous-ecg.txt", b"Synthetic ECG report for workflow testing only.")],
     )
 
+    assert graph_builds == 1
     assert run.status == WorkflowStatus.COMPLETED, (run.current_step, run.last_error)
     assert run.request.status == RequestStatus.COMPLETED
     assert run.request.confirmation_message.startswith("Request REQ-")

@@ -1,8 +1,9 @@
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal, TypedDict
 from zoneinfo import ZoneInfo
 
+from langgraph.graph import END, START, StateGraph
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
@@ -42,6 +43,23 @@ from app.tools import ToolGateway
 
 class WorkflowError(RuntimeError):
     pass
+
+
+WorkflowStage = Literal[
+    "intake",
+    "safety",
+    "routing",
+    "approval",
+    "appointment",
+    "documents",
+    "follow_up",
+    "confirmation",
+]
+
+
+class WorkflowGraphState(TypedDict):
+    workflow_run_id: int
+    completed_steps: int
 
 
 class WorkflowCoordinator:
@@ -119,19 +137,12 @@ class WorkflowCoordinator:
         run.attempt_count += 1
         run.last_error = None
         self.db.commit()
-        completed_this_execution = 0
         try:
-            while run.status == WorkflowStatus.RUNNING:
-                if completed_this_execution >= self.settings.max_workflow_steps:
-                    raise WorkflowError("Workflow exceeded its configured step limit")
-                stage = run.current_step
-                handler = getattr(self, f"_stage_{stage}", None)
-                if not handler:
-                    raise WorkflowError(f"Unknown workflow stage: {stage}")
-                handler(run)
-                completed_this_execution += 1
-                self.db.commit()
-                run = self._load_run(run.id)
+            graph = self._build_workflow_graph()
+            graph.invoke(
+                {"workflow_run_id": run.id, "completed_steps": 0},
+                config={"recursion_limit": self.settings.max_workflow_steps + 1},
+            )
         except Exception as exc:
             self.db.rollback()
             run = self._load_run(workflow_run_id)
@@ -167,6 +178,58 @@ class WorkflowCoordinator:
             )
             self.db.commit()
         return self._load_run(workflow_run_id)
+
+    def _build_workflow_graph(self):
+        graph = StateGraph(WorkflowGraphState)
+        stages: tuple[WorkflowStage, ...] = (
+            "intake",
+            "safety",
+            "routing",
+            "approval",
+            "appointment",
+            "documents",
+            "follow_up",
+            "confirmation",
+        )
+        for stage in stages:
+            graph.add_node(stage, self._graph_stage_node(stage))
+        graph.add_conditional_edges(START, self._graph_next_stage)
+        for stage in stages:
+            graph.add_conditional_edges(stage, self._graph_next_stage)
+        return graph.compile()
+
+    def _graph_stage_node(self, stage: WorkflowStage):
+        def run_stage(state: WorkflowGraphState) -> dict[str, int]:
+            run = self._load_run(state["workflow_run_id"])
+            if run.status != WorkflowStatus.RUNNING or run.current_step != stage:
+                return {"completed_steps": state["completed_steps"]}
+            completed_steps = state["completed_steps"] + 1
+            if completed_steps > self.settings.max_workflow_steps:
+                raise WorkflowError("Workflow exceeded its configured step limit")
+            getattr(self, f"_stage_{stage}")(run)
+            self.db.commit()
+            return {"completed_steps": completed_steps}
+
+        return run_stage
+
+    def _graph_next_stage(self, state: WorkflowGraphState) -> WorkflowStage | str:
+        run = self._load_run(state["workflow_run_id"])
+        if run.status != WorkflowStatus.RUNNING:
+            return END
+        if run.current_step == "complete":
+            return END
+        if run.current_step not in {
+            "intake",
+            "safety",
+            "routing",
+            "approval",
+            "appointment",
+            "documents",
+            "follow_up",
+            "confirmation",
+        }:
+            raise WorkflowError(f"Unknown workflow stage: {run.current_step}")
+        return run.current_step
 
     def _load_run(self, workflow_run_id: int) -> WorkflowRun:
         result = self.db.execute(

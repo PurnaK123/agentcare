@@ -221,9 +221,16 @@ Copy one row for every test:
 
 ### AGT-01: Verify all six distinct agents and state handoffs
 
+**Purpose:** Confirm the persisted agent timeline and the LangGraph orchestration used to execute it.
+
 1. Use the completed request from ADM-01.
 2. Expand each timeline entry in order.
 3. Record the agent name, prompt version, output, and tool names for each entry.
+4. Run the graph-backed workflow test:
+
+   ```powershell
+   .\.venv\Scripts\pytest.exe tests\test_workflow.py::test_booking_workflow_persists_agent_tools_and_results -q
+   ```
 
 **Expected results**
 
@@ -244,6 +251,7 @@ Copy one row for every test:
 | Distinctness | All six role names, prompts, and responsibilities are visible |
 | Handoff | Each output logically feeds the next stage |
 | Tool evidence | Tool arguments/results are visible and status is `completed` |
+| Graph execution | Automated test passes after compiling and invoking named per-run LangGraph nodes |
 | Model boundary | No agent output claims diagnosis or treatment |
 
 ### AGT-02: Confirm least-privilege tool enforcement
